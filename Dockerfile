@@ -33,6 +33,8 @@ RUN /frontend-mem-nag.sh
 WORKDIR /app/superset-frontend/
 
 COPY superset-frontend/package*.json ./
+ARG npm_mirror="https://registry.npmmirror.com"
+RUN npm config set registry ${npm_mirror}
 RUN npm ci
 
 COPY ./superset-frontend .
@@ -71,10 +73,11 @@ COPY setup.py MANIFEST.in README.md /app/
 # setup.py uses the version information in package.json
 COPY superset-frontend/package.json /app/superset-frontend/
 
+ARG pip_index=https://pypi.tuna.tsinghua.edu.cn/simple
 RUN cd /app \
     && mkdir -p superset/static \
     && touch superset/static/version_info.json \
-    && pip install --no-cache -r requirements/local.txt
+    && pip install -i ${pip_index} --no-cache -r requirements/local.txt
 
 COPY --from=superset-node /app/superset/static/assets /app/superset/static/assets
 
@@ -83,7 +86,7 @@ COPY superset /app/superset
 COPY setup.py MANIFEST.in README.md /app/
 RUN cd /app \
         && chown -R superset:superset * \
-        && pip install -e . \
+        && pip install -i ${pip_index} -e . \
         && flask fab babel-compile --target superset/translations
 
 COPY ./docker/run-server.sh /usr/bin/
@@ -127,8 +130,8 @@ RUN wget https://download-installer.cdn.mozilla.net/pub/firefox/releases/${FIREF
 
 # Cache everything for dev purposes...
 RUN cd /app \
-    && pip install --no-cache -r requirements/docker.txt \
-    && pip install --no-cache -r requirements/requirements-local.txt || true
+    && pip install -i ${pip_index} --no-cache -r requirements/docker.txt \
+    && pip install -i ${pip_index} --no-cache -r requirements/requirements-local.txt || true
 USER superset
 
 
